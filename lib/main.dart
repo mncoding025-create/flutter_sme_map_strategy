@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+// ต้องมั่นใจว่ามีไฟล์ map_page.dart อยู่ในโฟลเดอร์ views นะครับ
 import 'package:flutter_sme_map_strategy/views/login_page.dart';
+import 'package:flutter_sme_map_strategy/views/map_page.dart';
 
 Future<void> main() async {
   // 1. ตรวจสอบการเชื่อมต่อกับ Native Platform
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    // 2. โหลดไฟล์ .env
+    // 2. โหลดไฟล์ .env (สำหรับ API Key ต่างๆ)
     await dotenv.load(fileName: ".env");
     print("✅ .env loaded successfully");
 
@@ -16,7 +18,6 @@ Future<void> main() async {
     await Supabase.initialize(
       url: dotenv.env['SUPABASE_URL'] ?? '',
       anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
-      // ตั้งค่า Auth สำหรับ Web ให้เสถียรขึ้น
       authOptions: const FlutterAuthClientOptions(
         authFlowType: AuthFlowType.pkce,
       ),
@@ -29,7 +30,7 @@ Future<void> main() async {
   runApp(const MyApp());
 }
 
-// ตัวแปรลัดสำหรับเรียกใช้ Supabase Client
+// ตัวแปรลัดสำหรับเรียกใช้ Supabase Client ทั่วทั้งแอป
 final supabase = Supabase.instance.client;
 
 class MyApp extends StatelessWidget {
@@ -42,9 +43,10 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        colorSchemeSeed: Colors.blue,
+        colorSchemeSeed: Colors.blue, // ใช้สีฟ้าเป็นธีมหลัก
+        brightness: Brightness.light,
       ),
-      // เริ่มต้นที่หน้าเช็คสถานะ Login
+      // ด่านแรก: เช็คว่า Login หรือยัง
       home: const AuthCheckPage(),
     );
   }
@@ -61,7 +63,7 @@ class _AuthCheckPageState extends State<AuthCheckPage> {
   @override
   void initState() {
     super.initState();
-    // ฟังการเปลี่ยนแปลงสถานะ Login (เช่น พอกด Magic Link ปุ๊บ ให้เปลี่ยนหน้าปั๊บ)
+    // ติดตามสถานะการเข้าสู่ระบบ
     supabase.auth.onAuthStateChange.listen((data) {
       if (mounted) {
         setState(() {});
@@ -71,56 +73,84 @@ class _AuthCheckPageState extends State<AuthCheckPage> {
 
   @override
   Widget build(BuildContext context) {
-    // เช็ค Session ปัจจุบัน
     final session = supabase.auth.currentSession;
 
     if (session != null) {
-      // --- หน้าจอหลังจาก Login สำเร็จ ---
+      // --- ส่วนหน้าจอ Dashboard เมื่อ Login สำเร็จ ---
       return Scaffold(
         appBar: AppBar(
-          title: const Text('SME Dashboard'),
+          title: const Text('SME Strategy Dashboard'),
           centerTitle: true,
+          elevation: 2,
           actions: [
             IconButton(
-              icon: const Icon(Icons.logout),
-              tooltip: 'ออกจากระบบ',
+              icon: const Icon(Icons.logout_rounded),
               onPressed: () async {
                 await supabase.auth.signOut();
               },
             )
           ],
         ),
-        body: Center(
+        body: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.check_circle_outline,
-                  color: Colors.green, size: 80),
-              const SizedBox(height: 20),
+              const Icon(Icons.check_circle, color: Colors.green, size: 100),
+              const SizedBox(height: 24),
               Text(
-                'เข้าสู่ระบบสำเร็จ!',
-                style: Theme.of(context).textTheme.headlineSmall,
+                'ยินดีต้อนรับคุณ Chakrit',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               const SizedBox(height: 8),
-              Text('คุณเข้าใช้งานด้วยอีเมล: ${session.user.email}'),
-              const SizedBox(height: 32),
-              ElevatedButton.icon(
-                onPressed: () {
-                  // TODO: นำทางไปหน้าแผนที่ (ที่เรากำลังจะสร้าง)
-                },
-                icon: const Icon(Icons.map),
-                label: const Text('เริ่มวางแผนบนแผนที่'),
-                style: ElevatedButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              Text(
+                'บัญชี: ${session.user.email}',
+                style: const TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 40),
+
+              // ปุ่มนำทางไปหน้าแผนที่ (หัวใจหลักของแอปเรา)
+              SizedBox(
+                width: 250,
+                height: 55,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    // คำสั่งเปลี่ยนหน้าไปหน้าแผนที่
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const MapPage()),
+                    );
+                  },
+                  icon: const Icon(Icons.map_outlined),
+                  label: const Text(
+                    'เริ่มวางแผนบนแผนที่',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.shade600,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 5,
+                  ),
                 ),
+              ),
+
+              const SizedBox(height: 16),
+              const Text(
+                'เริ่มปักหมุดจุดยุทธศาสตร์ร้านค้าของคุณได้เลย',
+                style: TextStyle(fontSize: 14, color: Colors.blueGrey),
               ),
             ],
           ),
         ),
       );
     } else {
-      // --- ถ้ายังไม่ Login ให้แสดงหน้า LoginPage ---
+      // --- ถ้ายังไม่ได้ Login ให้ไปหน้า Login ---
       return const LoginPage();
     }
   }
