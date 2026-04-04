@@ -1,5 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+// ⚠️ เช็ค Path ตรงนี้ให้ตรงกับไฟล์ MapPage ของคุณด้วยนะครับ
+import 'map_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -11,10 +15,26 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   bool _isLoading = false;
+  late final StreamSubscription<AuthState> _authStateSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    // สายสืบ: คอยดักฟังการ Login จาก Magic Link
+    _authStateSubscription =
+        Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      final AuthChangeEvent event = data.event;
+      if (event == AuthChangeEvent.signedIn) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const MapPage()),
+        );
+      }
+    });
+  }
 
   Future<void> _signIn() async {
     final email = _emailController.text.trim();
-    
+
     if (email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('กรุณากรอกอีเมลก่อนครับ')),
@@ -24,15 +44,15 @@ class _LoginPageState extends State<LoginPage> {
 
     setState(() => _isLoading = true);
     try {
-      // ส่ง Magic Link ไปที่ Email
       await Supabase.instance.client.auth.signInWithOtp(
         email: email,
       );
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('ส่ง Magic Link เรียบร้อย! เช็คอีเมลของคุณเพื่อเข้าสู่ระบบนะ'),
+            content: Text(
+                'ส่ง Magic Link เรียบร้อย! เช็คอีเมลของคุณเพื่อเข้าสู่ระบบนะ'),
             backgroundColor: Colors.green,
           ),
         );
@@ -53,7 +73,8 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   void dispose() {
-    _emailController.dispose(); // คืน Memory เมื่อไม่ใช้หน้าจอแล้ว
+    _authStateSubscription.cancel();
+    _emailController.dispose();
     super.dispose();
   }
 
@@ -65,12 +86,12 @@ class _LoginPageState extends State<LoginPage> {
         centerTitle: true,
       ),
       body: Center(
-        child: SingleChildScrollView( // ป้องกันหน้าจอล้นเวลาเปิดคีย์บอร์ด
+        child: SingleChildScrollView(
           child: Container(
             constraints: const BoxConstraints(maxWidth: 400),
             padding: const EdgeInsets.all(24.0),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center, // แก้เป็นอันนี้แล้วครับ
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Icon(Icons.map_rounded, size: 100, color: Colors.blue),
                 const SizedBox(height: 24),
@@ -83,6 +104,8 @@ class _LoginPageState extends State<LoginPage> {
                   style: TextStyle(color: Colors.grey),
                 ),
                 const SizedBox(height: 32),
+
+                // ช่องกรอกอีเมล
                 TextField(
                   controller: _emailController,
                   decoration: const InputDecoration(
@@ -94,6 +117,8 @@ class _LoginPageState extends State<LoginPage> {
                   keyboardType: TextInputType.emailAddress,
                 ),
                 const SizedBox(height: 24),
+
+                // ปุ่มหลัก: ส่ง Magic Link
                 SizedBox(
                   width: double.infinity,
                   height: 55,
@@ -106,16 +131,39 @@ class _LoginPageState extends State<LoginPage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: _isLoading 
-                      ? const SizedBox(
-                          width: 20, 
-                          height: 20, 
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                        ) 
-                      : const Text('ส่ง Magic Link', style: TextStyle(fontSize: 16)),
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2))
+                        : const Text('ส่ง Magic Link',
+                            style: TextStyle(fontSize: 16)),
                   ),
                 ),
+
                 const SizedBox(height: 16),
+
+                // ปุ่มพิเศษ: Guest Mode (Bypass)
+                OutlinedButton.icon(
+                  onPressed: () {
+                    // วาร์ปไปหน้า MapPage ทันทีโดยไม่สนระบบ Login
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (context) => const MapPage()),
+                    );
+                  },
+                  icon: const Icon(Icons.person_outline),
+                  label: const Text('เข้าใช้งานแบบ Guest (ทดลองใช้)'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 55),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
                 const Text(
                   'เราจะส่งลิงก์สำหรับเข้าสู่ระบบไปที่อีเมลของคุณ\nโดยไม่ต้องใช้รหัสผ่าน',
                   textAlign: TextAlign.center,

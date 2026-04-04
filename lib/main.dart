@@ -47,7 +47,7 @@ class MyApp extends StatelessWidget {
         brightness: Brightness.light,
       ),
       // ด่านแรก: เช็คว่า Login หรือยัง
-      home: const AuthCheckPage(),
+      home: const LoginPage(),
     );
   }
 }
