@@ -49,7 +49,7 @@ class _AddCustomerLocationUiState extends State<AddCustomerLocationUi> {
 
             // เลือกจังหวัด
             DropdownButtonFormField<String>(
-              value: _selectedProvince,
+              initialValue: _selectedProvince,
               decoration: const InputDecoration(labelText: 'จังหวัด'),
               items: _provinces
                   .map((p) => DropdownMenuItem(value: p, child: Text(p)))
@@ -60,7 +60,7 @@ class _AddCustomerLocationUiState extends State<AddCustomerLocationUi> {
 
             // เลือกอำเภอ/ย่าน
             DropdownButtonFormField<String>(
-              value: _selectedDistrict,
+              initialValue: _selectedDistrict,
               decoration: const InputDecoration(labelText: 'อำเภอ/ย่าน'),
               items: _districts
                   .map((d) => DropdownMenuItem(value: d, child: Text(d)))
