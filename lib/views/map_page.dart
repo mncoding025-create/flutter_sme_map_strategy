@@ -6,8 +6,42 @@ import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+// 🌟 Import ไฟล์หน้า Credit ที่เราสร้างแยกไว้
+import 'credit_page.dart';
+
 // =======================================================
-// 🗺️ หน้า 1: แผนที่หลัก (MapPage) - ฉบับเสถียร 100%
+// 🎨 Palette สีประจำแอป
+// =======================================================
+class AppColors {
+  static const Color navyDeep = Color(0xFF003366);
+  static const Color azureLight = Color(0xFFE3F2FD);
+  static const Color accentBlue = Color(0xFF1976D2);
+  static const Color compRed = Color(0xFFEF5350);
+  static const Color storeBlue = Color(0xFF42A5F5);
+  static const Color customerGreen = Color(0xFF66BB6A);
+  static const Color bgGrey = Color(0xFFF5F7FA);
+}
+
+// =======================================================
+// 📌 ข้อมูลคงที่ (ย้ายออกมานอกคลาสเพื่อแก้ปัญหาเส้นเหลือง)
+// =======================================================
+const List<String> shopTypes = [
+  'ลูกค้า',
+  'หน้าร้านเรา',
+  'คู่แข่ง',
+  'ซัพพลายเออร์'
+];
+
+const List<String> ageRangeOptions = [
+  'ไม่ระบุ',
+  '15-25 ปี',
+  '26-40 ปี',
+  '41-60 ปี',
+  '60 ปีขึ้นไป'
+];
+
+// =======================================================
+// 🗺️ หน้า 1: แผนที่หลัก (MapPage)
 // =======================================================
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -18,7 +52,6 @@ class MapPage extends StatefulWidget {
 
 class _MapPageState extends State<MapPage> {
   final supabase = Supabase.instance.client;
-  GoogleMapController? _mapController;
 
   final Set<Marker> _markers = {};
   List<dynamic> _allShops = [];
@@ -34,78 +67,50 @@ class _MapPageState extends State<MapPage> {
     'ซัพพลายเออร์': true,
   };
 
-  final List<String> _types = [
-    'ลูกค้า',
-    'หน้าร้านเรา',
-    'คู่แข่ง',
-    'ซัพพลายเออร์'
-  ];
-  final List<String> _ageRanges = [
-    'ไม่ระบุ',
-    '15-25 ปี',
-    '26-40 ปี',
-    '41-60 ปี',
-    '60 ปีขึ้นไป'
-  ];
-
   @override
   void initState() {
     super.initState();
     _fetchShops();
   }
 
-  // ฟังก์ชันวาดหมุดแบบย่อขยายตามระยะซูม (ฉบับประหยัดทรัพยากร)
+  // --- ส่วนสร้างหมุดบนแผนที่แบบ Minimal ---
   Future<BitmapDescriptor> _createScaledIconMarker(
       IconData iconData, Color bgColor, double zoom) async {
     final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
     final Canvas canvas = Canvas(pictureRecorder);
 
-    double scale = (zoom / 15.0).clamp(0.4, 1.4);
-    double iconFontSize = 22.0 * scale;
-    double padding = 6.0 * scale;
+    double scale = (zoom / 15.0).clamp(0.5, 1.3);
+    double padding = 7.0 * scale;
 
     TextPainter iconPainter = TextPainter(textDirection: TextDirection.ltr);
     iconPainter.text = TextSpan(
         text: String.fromCharCode(iconData.codePoint),
         style: TextStyle(
-            fontSize: iconFontSize,
+            fontSize: 24.0 * scale,
             fontFamily: iconData.fontFamily,
             package: iconData.fontPackage,
             color: Colors.white));
     iconPainter.layout();
 
     final double size = iconPainter.width + (padding * 2);
-    final double pointerHeight = 10.0 * scale;
-    final double totalHeight = size + pointerHeight;
-
     final Paint paint = Paint()..color = bgColor;
-    final RRect rrect =
-        RRect.fromLTRBR(0, 0, size, size, Radius.circular(size / 2));
-    canvas.drawRRect(rrect, paint);
-
     final Paint borderPaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0 * scale;
-    canvas.drawRRect(rrect, borderPaint);
+      ..strokeWidth = 2.5 * scale;
 
+    canvas.drawCircle(Offset(size / 2, size / 2), size / 2, paint);
+    canvas.drawCircle(Offset(size / 2, size / 2), size / 2, borderPaint);
     iconPainter.paint(canvas, Offset(padding, padding));
-
-    final Path trianglePath = Path()
-      ..moveTo(size / 2 - (5 * scale), size)
-      ..lineTo(size / 2 + (5 * scale), size)
-      ..lineTo(size / 2, totalHeight)
-      ..close();
-    canvas.drawPath(trianglePath, paint);
-    canvas.drawPath(trianglePath, borderPaint);
 
     final ui.Image img = await pictureRecorder
         .endRecording()
-        .toImage(size.toInt() + 2, totalHeight.toInt() + 2);
+        .toImage(size.toInt(), size.toInt());
     final ByteData? data = await img.toByteData(format: ui.ImageByteFormat.png);
     return BitmapDescriptor.fromBytes(data!.buffer.asUint8List());
   }
 
+  // --- ดึงข้อมูลจากฐานข้อมูล ---
   Future<void> _fetchShops() async {
     try {
       final List<dynamic> shops = await supabase.from('shops').select();
@@ -116,6 +121,7 @@ class _MapPageState extends State<MapPage> {
     }
   }
 
+  // --- จัดการตัวกรองและการแสดงผลหมุด ---
   Future<void> _applyFilter() async {
     Set<Marker> newMarkers = {};
 
@@ -123,20 +129,23 @@ class _MapPageState extends State<MapPage> {
       String type = (shop['type']?.toString() ?? 'ลูกค้า').trim();
       if (_filters[type] == true) {
         String shopId = shop['id'].toString();
+
         double? lat = double.tryParse(shop['latitude'].toString());
         double? lng = double.tryParse(shop['longitude'].toString());
+
         if (lat == null || lng == null) continue;
 
         String shopName = shop['description']?.toString() ?? type;
 
-        IconData mIcon = Icons.warning_rounded;
-        Color mColor = Colors.red.shade700;
+        IconData mIcon = Icons.place;
+        Color mColor = AppColors.compRed;
+
         if (type.contains('หน้าร้านเรา')) {
           mIcon = Icons.storefront;
-          mColor = Colors.blue.shade700;
+          mColor = AppColors.storeBlue;
         } else if (type.contains('ลูกค้า')) {
           mIcon = Icons.person;
-          mColor = Colors.green.shade700;
+          mColor = AppColors.customerGreen;
         } else if (type.contains('ซัพพลายเออร์')) {
           mIcon = Icons.inventory_2;
           mColor = Colors.orange.shade700;
@@ -151,7 +160,7 @@ class _MapPageState extends State<MapPage> {
           icon: markerIcon,
           infoWindow: InfoWindow(
             title: shopName,
-            snippet: 'แตะเพื่อดูรายละเอียด/นำทาง',
+            snippet: 'แตะเพื่อจัดการข้อมูล',
             onTap: () => _showEditDialog(shop),
           ),
         ));
@@ -171,7 +180,7 @@ class _MapPageState extends State<MapPage> {
       await launchUrl(url, mode: LaunchMode.externalApplication);
   }
 
-  // ส่วนของการจัดการ Dialog (เพิ่ม/แก้ไข) ยังคงไว้เหมือนเดิมเพื่อการใช้งานที่สมบูรณ์
+  // --- Dialog เพิ่มข้อมูล ---
   void _showAddDialog(LatLng position) {
     final TextEditingController descController = TextEditingController();
     final TextEditingController qtyController =
@@ -183,18 +192,26 @@ class _MapPageState extends State<MapPage> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: Colors.white,
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('📊 บันทึกข้อมูลพิกัด'),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+          title: const Row(children: [
+            Icon(Icons.add_location_alt_rounded, color: AppColors.accentBlue),
+            SizedBox(width: 10),
+            Text('เพิ่มพิกัดยุทธศาสตร์',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))
+          ]),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<String>(
                     value: localSelectedType,
-                    decoration: const InputDecoration(
-                        labelText: 'ประเภท', border: OutlineInputBorder()),
-                    items: _types
+                    decoration: InputDecoration(
+                        labelText: 'ประเภทข้อมูล',
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15))),
+                    items: shopTypes
                         .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                         .toList(),
                     onChanged: (val) =>
@@ -203,10 +220,11 @@ class _MapPageState extends State<MapPage> {
                 if (localSelectedType == 'ลูกค้า') ...[
                   DropdownButtonFormField<String>(
                       value: localSelectedAge,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                           labelText: 'กลุ่มอายุหลัก',
-                          border: OutlineInputBorder()),
-                      items: _ageRanges
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(15))),
+                      items: ageRangeOptions
                           .map(
                               (a) => DropdownMenuItem(value: a, child: Text(a)))
                           .toList(),
@@ -214,21 +232,24 @@ class _MapPageState extends State<MapPage> {
                           setDialogState(() => localSelectedAge = val!)),
                   const SizedBox(height: 16),
                   Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade400),
-                        borderRadius: BorderRadius.circular(4)),
+                        color: AppColors.bgGrey,
+                        borderRadius: BorderRadius.circular(15)),
                     child: Column(
                       children: [
                         const Text('จำนวนลูกค้า (คน)',
-                            style:
-                                TextStyle(color: Colors.black54, fontSize: 12)),
+                            style: TextStyle(
+                                color: Colors.black54,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             IconButton(
                                 icon: const Icon(Icons.remove_circle,
-                                    color: Colors.redAccent, size: 36),
+                                    color: AppColors.compRed, size: 36),
                                 onPressed: () {
                                   int c = int.tryParse(qtyController.text) ?? 0;
                                   if (c > 0)
@@ -244,15 +265,14 @@ class _MapPageState extends State<MapPage> {
                                     ],
                                     textAlign: TextAlign.center,
                                     style: const TextStyle(
-                                        fontSize: 20,
+                                        fontSize: 22,
                                         fontWeight: FontWeight.bold),
                                     decoration: const InputDecoration(
-                                        border: OutlineInputBorder(),
-                                        contentPadding: EdgeInsets.symmetric(
-                                            vertical: 8)))),
+                                        border: InputBorder.none,
+                                        isDense: true))),
                             IconButton(
                                 icon: const Icon(Icons.add_circle,
-                                    color: Colors.green, size: 36),
+                                    color: AppColors.customerGreen, size: 36),
                                 onPressed: () {
                                   int c = int.tryParse(qtyController.text) ?? 0;
                                   qtyController.text = (c + 1).toString();
@@ -266,9 +286,10 @@ class _MapPageState extends State<MapPage> {
                 ],
                 TextField(
                     controller: descController,
-                    decoration: const InputDecoration(
-                        labelText: 'ชื่อร้าน/หมายเหตุ',
-                        border: OutlineInputBorder()),
+                    decoration: InputDecoration(
+                        labelText: 'ชื่อร้าน/รายละเอียด',
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15))),
                     maxLines: 2),
               ],
             ),
@@ -276,11 +297,14 @@ class _MapPageState extends State<MapPage> {
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('ยกเลิก')),
+                child:
+                    const Text('ยกเลิก', style: TextStyle(color: Colors.grey))),
             ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white),
+                    backgroundColor: AppColors.accentBlue,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10))),
                 onPressed: () async {
                   String finalQty =
                       qtyController.text.isEmpty ? '0' : qtyController.text;
@@ -288,35 +312,40 @@ class _MapPageState extends State<MapPage> {
                       localSelectedType, localSelectedAge, finalQty);
                   if (context.mounted) Navigator.pop(context);
                 },
-                child: const Text('บันทึก')),
+                child: const Text('บันทึกข้อมูล')),
           ],
         ),
       ),
     );
   }
 
+  // --- Dialog แก้ไขข้อมูล ---
   void _showEditDialog(dynamic shop) {
     final TextEditingController descController =
         TextEditingController(text: shop['description']?.toString() ?? '');
     final TextEditingController qtyController =
         TextEditingController(text: shop['quantity']?.toString() ?? '0');
     String rawType = (shop['type']?.toString() ?? 'ลูกค้า').trim();
-    String localSelectedType = _types.contains(rawType) ? rawType : 'ลูกค้า';
+    String localSelectedType = shopTypes.contains(rawType) ? rawType : 'ลูกค้า';
     String rawAge = (shop['age_range']?.toString() ?? '26-40 ปี').trim();
-    String localSelectedAge = _ageRanges.contains(rawAge) ? rawAge : '26-40 ปี';
+    String localSelectedAge =
+        ageRangeOptions.contains(rawAge) ? rawAge : '26-40 ปี';
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: Colors.white,
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
           title: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('✏️ จัดการข้อมูล', style: TextStyle(fontSize: 20)),
+              const Text('จัดการข้อมูล',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
+                  icon: const Icon(Icons.delete_outline,
+                      color: AppColors.compRed),
                   onPressed: () async {
                     bool? c = await _showConfirmDeleteDialog();
                     if (c == true) {
@@ -332,9 +361,11 @@ class _MapPageState extends State<MapPage> {
               children: [
                 DropdownButtonFormField<String>(
                     value: localSelectedType,
-                    decoration: const InputDecoration(
-                        labelText: 'ประเภท', border: OutlineInputBorder()),
-                    items: _types
+                    decoration: InputDecoration(
+                        labelText: 'ประเภทข้อมูล',
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15))),
+                    items: shopTypes
                         .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                         .toList(),
                     onChanged: (val) =>
@@ -343,10 +374,11 @@ class _MapPageState extends State<MapPage> {
                 if (localSelectedType == 'ลูกค้า') ...[
                   DropdownButtonFormField<String>(
                       value: localSelectedAge,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                           labelText: 'กลุ่มอายุหลัก',
-                          border: OutlineInputBorder()),
-                      items: _ageRanges
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(15))),
+                      items: ageRangeOptions
                           .map(
                               (a) => DropdownMenuItem(value: a, child: Text(a)))
                           .toList(),
@@ -354,21 +386,24 @@ class _MapPageState extends State<MapPage> {
                           setDialogState(() => localSelectedAge = val!)),
                   const SizedBox(height: 16),
                   Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade400),
-                        borderRadius: BorderRadius.circular(4)),
+                        color: AppColors.bgGrey,
+                        borderRadius: BorderRadius.circular(15)),
                     child: Column(
                       children: [
                         const Text('จำนวนลูกค้า (คน)',
-                            style:
-                                TextStyle(color: Colors.black54, fontSize: 12)),
+                            style: TextStyle(
+                                color: Colors.black54,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             IconButton(
                                 icon: const Icon(Icons.remove_circle,
-                                    color: Colors.redAccent, size: 36),
+                                    color: AppColors.compRed, size: 36),
                                 onPressed: () {
                                   int c = int.tryParse(qtyController.text) ?? 0;
                                   if (c > 0)
@@ -384,15 +419,14 @@ class _MapPageState extends State<MapPage> {
                                     ],
                                     textAlign: TextAlign.center,
                                     style: const TextStyle(
-                                        fontSize: 20,
+                                        fontSize: 22,
                                         fontWeight: FontWeight.bold),
                                     decoration: const InputDecoration(
-                                        border: OutlineInputBorder(),
-                                        contentPadding: EdgeInsets.symmetric(
-                                            vertical: 8)))),
+                                        border: InputBorder.none,
+                                        isDense: true))),
                             IconButton(
                                 icon: const Icon(Icons.add_circle,
-                                    color: Colors.green, size: 36),
+                                    color: AppColors.customerGreen, size: 36),
                                 onPressed: () {
                                   int c = int.tryParse(qtyController.text) ?? 0;
                                   qtyController.text = (c + 1).toString();
@@ -406,21 +440,25 @@ class _MapPageState extends State<MapPage> {
                 ],
                 TextField(
                     controller: descController,
-                    decoration: const InputDecoration(
-                        labelText: 'ชื่อร้าน/หมายเหตุ',
-                        border: OutlineInputBorder()),
+                    decoration: InputDecoration(
+                        labelText: 'ชื่อร้าน/รายละเอียด',
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15))),
                     maxLines: 2),
                 const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green.shade600,
+                        backgroundColor: AppColors.customerGreen,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10))),
                     icon: const Icon(Icons.directions),
-                    label: const Text('นำทางด้วย Google Maps',
-                        style: TextStyle(fontSize: 16)),
+                    label: const Text('นำทางด้วยแผนที่',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
                     onPressed: () {
                       double? lat =
                           double.tryParse(shop['latitude'].toString());
@@ -437,11 +475,14 @@ class _MapPageState extends State<MapPage> {
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('ยกเลิก')),
+                child:
+                    const Text('ยกเลิก', style: TextStyle(color: Colors.grey))),
             ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white),
+                    backgroundColor: AppColors.accentBlue,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10))),
                 onPressed: () async {
                   String finalQty =
                       qtyController.text.isEmpty ? '0' : qtyController.text;
@@ -449,29 +490,33 @@ class _MapPageState extends State<MapPage> {
                       localSelectedType, localSelectedAge, finalQty);
                   if (context.mounted) Navigator.pop(context);
                 },
-                child: const Text('อัปเดต')),
+                child: const Text('อัปเดตข้อมูล')),
           ],
         ),
       ),
     );
   }
 
+  // --- ระบบ Database ของ Supabase ---
   Future<bool?> _showConfirmDeleteDialog() {
     return showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20)),
                 title: const Text('ยืนยันการลบ'),
-                content: const Text('คุณแน่ใจหรือไม่ว่าต้องการลบพิกัดนี้?'),
+                content: const Text(
+                    'คุณแน่ใจหรือไม่ว่าต้องการลบพิกัดนี้? ข้อมูลจะไม่สามารถกู้คืนได้'),
                 actions: [
                   TextButton(
                       onPressed: () => Navigator.pop(context, false),
                       child: const Text('ยกเลิก')),
                   ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
+                          backgroundColor: AppColors.compRed,
                           foregroundColor: Colors.white),
                       onPressed: () => Navigator.pop(context, true),
-                      child: const Text('ลบ'))
+                      child: const Text('ลบทิ้ง'))
                 ]));
   }
 
@@ -516,64 +561,116 @@ class _MapPageState extends State<MapPage> {
     }
   }
 
+  // --- ส่วนสร้างหน้าจอ (UI Build) ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('SME Strategy Analytics'),
-        backgroundColor: Colors.blue.shade800,
+        title: const Text('SME Strategy Map',
+            style: TextStyle(
+                fontWeight: FontWeight.w800, letterSpacing: 1.0, fontSize: 22)),
+        elevation: 0,
+        backgroundColor: AppColors.navyDeep.withOpacity(0.9),
         foregroundColor: Colors.white,
+        centerTitle: true,
+        shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(25))),
+        leading: Builder(
+            builder: (context) => IconButton(
+                icon: const Icon(Icons.menu_open_rounded, size: 28),
+                onPressed: () => Scaffold.of(context).openDrawer())),
         actions: [
           IconButton(
-              icon: const Icon(Icons.refresh),
-              tooltip: 'รีเฟรชข้อมูล',
-              onPressed: _fetchShops),
-          IconButton(
-              icon: const Icon(Icons.bar_chart, size: 28),
-              tooltip: 'ดูแดชบอร์ด',
+              icon: const Icon(Icons.analytics_outlined, size: 28),
+              tooltip: 'แดชบอร์ด',
               onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(
                       builder: (context) => const DashboardPage()))),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
         ],
       ),
       drawer: Drawer(
-        child: Column(
-          children: [
-            DrawerHeader(
-                decoration: BoxDecoration(color: Colors.blue.shade800),
-                child: const Center(
-                    child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                      Icon(Icons.filter_list, color: Colors.white, size: 40),
-                      SizedBox(height: 10),
-                      Text('ตัวกรองแผนที่',
-                          style: TextStyle(color: Colors.white, fontSize: 20))
-                    ]))),
-            Expanded(
-                child: ListView(
-                    children: _filters.keys.map((String key) {
-              return CheckboxListTile(
-                  title: Text(key),
-                  value: _filters[key],
-                  activeColor: Colors.blue,
-                  onChanged: (bool? value) {
-                    setState(() {
-                      _filters[key] = value!;
-                      _applyFilter();
-                    });
-                  });
-            }).toList())),
-            const Divider(),
-            Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text('รวม: ${_markers.length} พิกัด',
-                    style: const TextStyle(color: Colors.grey)))
-          ],
-        ),
+        backgroundColor: Colors.white,
+        shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.horizontal(right: Radius.circular(30))),
+        child: Column(children: [
+          DrawerHeader(
+              decoration: const BoxDecoration(color: AppColors.navyDeep),
+              child: Center(
+                  child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                    Container(
+                        padding: const EdgeInsets.all(15),
+                        decoration: const BoxDecoration(
+                            color: Colors.white, shape: BoxShape.circle),
+                        child: const Icon(Icons.business_center_rounded,
+                            size: 45, color: AppColors.navyDeep)),
+                    const SizedBox(height: 12),
+                    const Text('SME Strategy Analytics',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold))
+                  ]))),
+          Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Text('ตัวกรองข้อมูลบนแผนที่',
+                  style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.bold))),
+          Expanded(
+              child: ListView(
+                  padding: const EdgeInsets.all(10),
+                  children: _filters.keys
+                      .map((key) => CheckboxListTile(
+                          title: Text(key,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w600)),
+                          value: _filters[key],
+                          activeColor: AppColors.accentBlue,
+                          contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 10),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15)),
+                          onChanged: (val) {
+                            setState(() {
+                              _filters[key] = val!;
+                              _applyFilter();
+                            });
+                          }))
+                      .toList())),
+          const Divider(),
+
+          // ปุ่มเกี่ยวกับระบบที่เชื่อมไปไฟล์ credit_page.dart
+          ListTile(
+            leading: const Icon(Icons.info_outline_rounded,
+                color: AppColors.accentBlue, size: 28),
+            title: const Text('Info',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold, color: AppColors.navyDeep)),
+            trailing:
+                const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+            onTap: () {
+              Navigator.pop(context); // ปิด Drawer
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => const CreditPage()));
+            },
+          ),
+          const SizedBox(height: 20)
+        ]),
       ),
+
+      // ปุ่มลอยให้อยู่ซ้ายล่าง
+      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: AppColors.accentBlue,
+        child: const Icon(Icons.sync, color: Colors.white, size: 30),
+        onPressed: _fetchShops,
+      ),
+
       body: GoogleMap(
         initialCameraPosition:
             CameraPosition(target: _currentCenter, zoom: 15.0),
@@ -588,9 +685,6 @@ class _MapPageState extends State<MapPage> {
             _applyFilter();
           }
         },
-        onMapCreated: (controller) {
-          _mapController = controller;
-        },
         onLongPress: _showAddDialog,
         myLocationEnabled: true,
         myLocationButtonEnabled: true,
@@ -600,7 +694,7 @@ class _MapPageState extends State<MapPage> {
 }
 
 // =======================================================
-// 📊 หน้า 2: แดชบอร์ดสรุปข้อมูล
+// 📊 หน้า 2: แดชบอร์ดสรุปข้อมูล (DashboardPage)
 // =======================================================
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -614,39 +708,75 @@ class _DashboardPageState extends State<DashboardPage> {
     return await supabase.from('shops').select() as List<dynamic>;
   }
 
-  Widget _buildSummaryCard(
-      String title, String value, IconData icon, Color color) {
-    return Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child:
-                Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(icon, size: 40, color: color),
-              const SizedBox(height: 8),
+  Widget _buildSectionTitle(String title) {
+    return Row(children: [
+      Container(
+          width: 6,
+          height: 24,
+          decoration: BoxDecoration(
+              color: AppColors.accentBlue,
+              borderRadius: BorderRadius.circular(10))),
+      const SizedBox(width: 12),
+      Text(title,
+          style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: AppColors.navyDeep)),
+    ]);
+  }
+
+  Widget _buildStatCard(
+      String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.grey.withOpacity(0.08),
+                blurRadius: 15,
+                offset: const Offset(0, 5))
+          ]),
+      child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                      color: color.withOpacity(0.1), shape: BoxShape.circle),
+                  child: Icon(icon, color: color, size: 28)),
               Text(value,
                   style: TextStyle(
-                      fontSize: 28, fontWeight: FontWeight.bold, color: color)),
-              const SizedBox(height: 4),
-              Text(title,
-                  style: const TextStyle(fontSize: 14, color: Colors.black54),
-                  textAlign: TextAlign.center)
-            ])));
+                      fontSize: 32, fontWeight: FontWeight.bold, color: color)),
+            ]),
+            const SizedBox(height: 15),
+            Text(label,
+                style: const TextStyle(
+                    color: Colors.black87,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500),
+                maxLines: 2),
+          ]),
+    );
   }
 
   Widget _buildSimpleBar(String label, int value, double percentage) {
-    final chartBlue = Colors.blue.shade900;
     return Column(mainAxisAlignment: MainAxisAlignment.end, children: [
       Text('$value',
-          style: TextStyle(
-              fontWeight: FontWeight.bold, color: chartBlue, fontSize: 13)),
+          style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: AppColors.navyDeep,
+              fontSize: 14)),
       const SizedBox(height: 6),
       Container(
           width: 35,
           height: 180 * percentage,
           decoration: BoxDecoration(
-              color: chartBlue, borderRadius: BorderRadius.circular(6))),
+              color: AppColors.accentBlue,
+              borderRadius: BorderRadius.circular(8))),
       const SizedBox(height: 8),
       SizedBox(
           width: 55,
@@ -660,18 +790,22 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.bgGrey,
       appBar: AppBar(
-          title: const Text('📊 สรุปยุทธศาสตร์ SME'),
-          backgroundColor: Colors.blue.shade800,
-          foregroundColor: Colors.white),
-      backgroundColor: Colors.grey.shade100,
+          title: const Text('ศูนย์รวมข้อมูลยุทธศาสตร์',
+              style: TextStyle(fontWeight: FontWeight.bold)),
+          backgroundColor: AppColors.navyDeep,
+          foregroundColor: Colors.white,
+          elevation: 0),
       body: FutureBuilder<List<dynamic>>(
         future: _fetchDashboardData(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting)
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+                child: CircularProgressIndicator(color: AppColors.navyDeep));
           if (snapshot.hasError || !snapshot.hasData)
             return const Center(child: Text('เกิดข้อผิดพลาดในการโหลดข้อมูล'));
+
           final shops = snapshot.data!;
           int totalPins = shops.length,
               totalCustomers = 0,
@@ -684,10 +818,12 @@ class _DashboardPageState extends State<DashboardPage> {
             '41-60 ปี': 0,
             '60 ปีขึ้นไป': 0
           };
+
           for (var shop in shops) {
             String type = (shop['type']?.toString() ?? '').trim();
             int qty = int.tryParse(shop['quantity']?.toString() ?? '0') ?? 0;
             String age = (shop['age_range']?.toString() ?? 'ไม่ระบุ').trim();
+
             if (type.contains('ลูกค้า')) {
               totalCustomers += qty;
               if (ageData.containsKey(age)) ageData[age] = ageData[age]! + qty;
@@ -700,61 +836,56 @@ class _DashboardPageState extends State<DashboardPage> {
           if (maxAgeValue == 0) maxAgeValue = 1;
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(20.0),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('ตัวชี้วัดความสำเร็จ (KPIs)',
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87)),
-              const SizedBox(height: 12),
+              _buildSectionTitle('ดัชนีชี้วัดหลัก (KPIs)'),
+              const SizedBox(height: 15),
               GridView.count(
                   crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 15,
+                  mainAxisSpacing: 15,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
-                    _buildSummaryCard('ลูกค้ารวม (คน)', '$totalCustomers',
-                        Icons.groups, Colors.green),
-                    _buildSummaryCard('จำนวนพิกัดรวม', '$totalPins',
-                        Icons.place, Colors.blue),
-                    _buildSummaryCard('ร้านคู่แข่ง', '$countCompetitor',
-                        Icons.warning_rounded, Colors.red),
-                    _buildSummaryCard('สาขาของเรา', '$countStore',
-                        Icons.storefront, Colors.lightBlue)
+                    _buildStatCard('ลูกค้ารวม (คน)', '$totalCustomers',
+                        Icons.groups_rounded, AppColors.customerGreen),
+                    _buildStatCard('พิกัดทั้งหมด', '$totalPins',
+                        Icons.map_rounded, AppColors.accentBlue),
+                    _buildStatCard('ร้านคู่แข่ง', '$countCompetitor',
+                        Icons.dangerous_rounded, AppColors.compRed),
+                    _buildStatCard('สาขาของเรา', '$countStore',
+                        Icons.storefront_rounded, AppColors.storeBlue)
                   ]),
-              const SizedBox(height: 32),
-              const Text('สัดส่วนกลุ่มอายุลูกค้าเป้าหมาย',
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87)),
-              const SizedBox(height: 12),
-              Card(
-                  elevation: 4,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16)),
-                  child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: SizedBox(
-                          height: 250,
-                          child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: ageData.entries.map((entry) {
-                                    double percentage =
-                                        entry.value / maxAgeValue;
-                                    return Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 10.0),
-                                        child: _buildSimpleBar(entry.key,
-                                            entry.value, percentage));
-                                  }).toList()))))),
+              const SizedBox(height: 30),
+              _buildSectionTitle('สัดส่วนกลุ่มอายุลูกค้าเป้าหมาย'),
+              const SizedBox(height: 15),
+              Container(
+                  decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(25),
+                      boxShadow: [
+                        BoxShadow(
+                            color: Colors.grey.withOpacity(0.08),
+                            blurRadius: 15,
+                            offset: const Offset(0, 5))
+                      ]),
+                  padding: const EdgeInsets.all(20.0),
+                  child: SizedBox(
+                      height: 250,
+                      child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: ageData.entries.map((entry) {
+                                double percentage = entry.value / maxAgeValue;
+                                return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10.0),
+                                    child: _buildSimpleBar(
+                                        entry.key, entry.value, percentage));
+                              }).toList())))),
               const SizedBox(height: 20),
             ]),
           );

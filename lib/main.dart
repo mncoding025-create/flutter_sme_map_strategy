@@ -102,12 +102,6 @@ class LoginPage extends StatelessWidget {
                 ),
               ),
             ),
-
-            const SizedBox(height: 20),
-            const Text(
-              'ระบบเชื่อมต่อกับ Supabase Database เรียบร้อยแล้ว',
-              style: TextStyle(color: Colors.white54, fontSize: 12),
-            ),
           ],
         ),
       ),
