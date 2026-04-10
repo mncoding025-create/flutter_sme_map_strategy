@@ -5,12 +5,10 @@ import 'dart:ui' as ui;
 import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-// 🌟 Import ไฟล์หน้า Credit ที่เราสร้างแยกไว้
 import 'credit_page.dart';
 
 // =======================================================
-// 🎨 Palette สีประจำแอป
+// สี
 // =======================================================
 class AppColors {
   static const Color navyDeep = Color(0xFF003366);
@@ -23,7 +21,7 @@ class AppColors {
 }
 
 // =======================================================
-// 📌 ข้อมูลคงที่ (ย้ายออกมานอกคลาสเพื่อแก้ปัญหาเส้นเหลือง)
+// ข้อมูลคงที่
 // =======================================================
 const List<String> shopTypes = [
   'ลูกค้า',
@@ -41,7 +39,7 @@ const List<String> ageRangeOptions = [
 ];
 
 // =======================================================
-// 🗺️ หน้า 1: แผนที่หลัก (MapPage)
+// แผนที่หลัก (MapPage)
 // =======================================================
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -73,7 +71,7 @@ class _MapPageState extends State<MapPage> {
     _fetchShops();
   }
 
-  // --- ส่วนสร้างหมุดบนแผนที่แบบ Minimal ---
+  // --- ส่วนสร้างหมุดบนแผนที่ ---
   Future<BitmapDescriptor> _createScaledIconMarker(
       IconData iconData, Color bgColor, double zoom) async {
     final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
@@ -110,7 +108,7 @@ class _MapPageState extends State<MapPage> {
     return BitmapDescriptor.fromBytes(data!.buffer.asUint8List());
   }
 
-  // --- ดึงข้อมูลจากฐานข้อมูล ---
+  // --- ดึงข้อมูลจาก Supabase ---
   Future<void> _fetchShops() async {
     try {
       final List<dynamic> shops = await supabase.from('shops').select();
@@ -180,7 +178,7 @@ class _MapPageState extends State<MapPage> {
       await launchUrl(url, mode: LaunchMode.externalApplication);
   }
 
-  // --- Dialog เพิ่มข้อมูล ---
+  // --- เพิ่มข้อมูล ---
   void _showAddDialog(LatLng position) {
     final TextEditingController descController = TextEditingController();
     final TextEditingController qtyController =
@@ -319,7 +317,7 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
-  // --- Dialog แก้ไขข้อมูล ---
+  // --- แก้ไขข้อมูล ---
   void _showEditDialog(dynamic shop) {
     final TextEditingController descController =
         TextEditingController(text: shop['description']?.toString() ?? '');
@@ -561,7 +559,7 @@ class _MapPageState extends State<MapPage> {
     }
   }
 
-  // --- ส่วนสร้างหน้าจอ (UI Build) ---
+  // --- UI Build ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -644,7 +642,7 @@ class _MapPageState extends State<MapPage> {
                       .toList())),
           const Divider(),
 
-          // ปุ่มเกี่ยวกับระบบที่เชื่อมไปไฟล์ credit_page.dart
+          // credit_page.dart
           ListTile(
             leading: const Icon(Icons.info_outline_rounded,
                 color: AppColors.accentBlue, size: 28),
@@ -663,7 +661,7 @@ class _MapPageState extends State<MapPage> {
         ]),
       ),
 
-      // ปุ่มลอยให้อยู่ซ้ายล่าง
+      // ปุ่มซ้ายล่าง
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.accentBlue,
@@ -694,7 +692,7 @@ class _MapPageState extends State<MapPage> {
 }
 
 // =======================================================
-// 📊 หน้า 2: แดชบอร์ดสรุปข้อมูล (DashboardPage)
+// DashboardPage
 // =======================================================
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});

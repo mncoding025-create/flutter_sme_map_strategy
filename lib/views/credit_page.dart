@@ -56,7 +56,7 @@ class CreditPage extends StatelessWidget {
             ),
             const SizedBox(height: 40),
 
-            // การ์ดข้อมูลผู้พัฒนา
+            // Credit area
             Container(
               padding: const EdgeInsets.all(25),
               decoration: BoxDecoration(

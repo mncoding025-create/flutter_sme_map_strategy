@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-// ⚠️ เช็ค Path ตรงนี้ให้ตรงกับไฟล์ MapPage ของคุณด้วยนะครับ
 import 'map_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -144,7 +142,7 @@ class _LoginPageState extends State<LoginPage> {
 
                 const SizedBox(height: 16),
 
-                // ปุ่มพิเศษ: Guest Mode (Bypass)
+                // Guest Mode (Bypass)
                 OutlinedButton.icon(
                   onPressed: () {
                     // วาร์ปไปหน้า MapPage ทันทีโดยไม่สนระบบ Login
