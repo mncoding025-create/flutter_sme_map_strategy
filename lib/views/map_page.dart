@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // =======================================================
-// 🗺️ หน้า 1: แผนที่หลัก (MapPage)
+// 🗺️ หน้า 1: แผนที่หลัก (MapPage) - ฉบับเสถียร 100%
 // =======================================================
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -23,11 +23,9 @@ class _MapPageState extends State<MapPage> {
   final Set<Marker> _markers = {};
   List<dynamic> _allShops = [];
 
-  bool _isDarkMode = true;
-
-  // 🌟 ระบบ Dynamic Zoom
   double _currentZoom = 15.0;
   double _lastDrawnZoom = 15.0;
+  LatLng _currentCenter = const LatLng(13.5475, 100.2744);
 
   final Map<String, bool> _filters = {
     'ลูกค้า': true,
@@ -56,20 +54,16 @@ class _MapPageState extends State<MapPage> {
     _fetchShops();
   }
 
-  // 🌟 ฟังก์ชันวาดหมุดไอคอน (เวอร์ชันย่อส่วนให้เล็กลง มินิมอลขึ้น)
+  // ฟังก์ชันวาดหมุดแบบย่อขยายตามระยะซูม (ฉบับประหยัดทรัพยากร)
   Future<BitmapDescriptor> _createScaledIconMarker(
       IconData iconData, Color bgColor, double zoom) async {
     final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
     final Canvas canvas = Canvas(pictureRecorder);
 
-    // คำนวณตัวคูณ (Scale)
     double scale = (zoom / 15.0).clamp(0.4, 1.4);
+    double iconFontSize = 22.0 * scale;
+    double padding = 6.0 * scale;
 
-    // 🌟 ลดขนาดพื้นฐานลงทั้งหมด
-    double iconFontSize = 22.0 * scale; // ลดจาก 35 เหลือ 22
-    double padding = 6.0 * scale; // ลดจาก 10 เหลือ 6
-
-    // วาดไอคอน
     TextPainter iconPainter = TextPainter(textDirection: TextDirection.ltr);
     iconPainter.text = TextSpan(
         text: String.fromCharCode(iconData.codePoint),
@@ -81,28 +75,24 @@ class _MapPageState extends State<MapPage> {
     iconPainter.layout();
 
     final double size = iconPainter.width + (padding * 2);
-    final double pointerHeight = 10.0 * scale; // ลดปลายแหลมจาก 15 เหลือ 10
+    final double pointerHeight = 10.0 * scale;
     final double totalHeight = size + pointerHeight;
 
-    // วาดพื้นหลังวงกลม
     final Paint paint = Paint()..color = bgColor;
     final RRect rrect =
         RRect.fromLTRBR(0, 0, size, size, Radius.circular(size / 2));
     canvas.drawRRect(rrect, paint);
 
-    // วาดขอบขาว (บางลง)
     final Paint borderPaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0 * scale; // ลดจาก 3 เหลือ 2
+      ..strokeWidth = 2.0 * scale;
     canvas.drawRRect(rrect, borderPaint);
 
-    // แปะไอคอนลงไป
     iconPainter.paint(canvas, Offset(padding, padding));
 
-    // วาดสามเหลี่ยมชี้พิกัด
     final Path trianglePath = Path()
-      ..moveTo(size / 2 - (5 * scale), size) // ฐานสามเหลี่ยมแคบลง
+      ..moveTo(size / 2 - (5 * scale), size)
       ..lineTo(size / 2 + (5 * scale), size)
       ..lineTo(size / 2, totalHeight)
       ..close();
@@ -138,7 +128,6 @@ class _MapPageState extends State<MapPage> {
         if (lat == null || lng == null) continue;
 
         String shopName = shop['description']?.toString() ?? type;
-        if (shopName.isEmpty) shopName = type;
 
         IconData mIcon = Icons.warning_rounded;
         Color mColor = Colors.red.shade700;
@@ -157,13 +146,12 @@ class _MapPageState extends State<MapPage> {
             await _createScaledIconMarker(mIcon, mColor, _currentZoom);
 
         newMarkers.add(Marker(
-          markerId:
-              MarkerId('${shopId}_zoom_${_currentZoom.toStringAsFixed(1)}'),
+          markerId: MarkerId('${shopId}_z_${_currentZoom.toStringAsFixed(1)}'),
           position: LatLng(lat, lng),
           icon: markerIcon,
           infoWindow: InfoWindow(
             title: shopName,
-            snippet: 'แตะที่นี่เพื่อดูรายละเอียด/นำทาง',
+            snippet: 'แตะเพื่อดูรายละเอียด/นำทาง',
             onTap: () => _showEditDialog(shop),
           ),
         ));
@@ -183,6 +171,7 @@ class _MapPageState extends State<MapPage> {
       await launchUrl(url, mode: LaunchMode.externalApplication);
   }
 
+  // ส่วนของการจัดการ Dialog (เพิ่ม/แก้ไข) ยังคงไว้เหมือนเดิมเพื่อการใช้งานที่สมบูรณ์
   void _showAddDialog(LatLng position) {
     final TextEditingController descController = TextEditingController();
     final TextEditingController qtyController =
@@ -196,7 +185,7 @@ class _MapPageState extends State<MapPage> {
         builder: (context, setDialogState) => AlertDialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('📊 บันทึกข้อมูลการตลาด'),
+          title: const Text('📊 บันทึกข้อมูลพิกัด'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -278,7 +267,7 @@ class _MapPageState extends State<MapPage> {
                 TextField(
                     controller: descController,
                     decoration: const InputDecoration(
-                        labelText: 'หมายเหตุ/ชื่อร้าน',
+                        labelText: 'ชื่อร้าน/หมายเหตุ',
                         border: OutlineInputBorder()),
                     maxLines: 2),
               ],
@@ -418,7 +407,7 @@ class _MapPageState extends State<MapPage> {
                 TextField(
                     controller: descController,
                     decoration: const InputDecoration(
-                        labelText: 'หมายเหตุ/ชื่อร้าน',
+                        labelText: 'ชื่อร้าน/หมายเหตุ',
                         border: OutlineInputBorder()),
                     maxLines: 2),
                 const SizedBox(height: 20),
@@ -430,7 +419,7 @@ class _MapPageState extends State<MapPage> {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12)),
                     icon: const Icon(Icons.directions),
-                    label: const Text('นำทางไปที่นี่',
+                    label: const Text('นำทางด้วย Google Maps',
                         style: TextStyle(fontSize: 16)),
                     onPressed: () {
                       double? lat =
@@ -460,7 +449,7 @@ class _MapPageState extends State<MapPage> {
                       localSelectedType, localSelectedAge, finalQty);
                   if (context.mounted) Navigator.pop(context);
                 },
-                child: const Text('อัปเดตข้อมูล')),
+                child: const Text('อัปเดต')),
           ],
         ),
       ),
@@ -482,7 +471,7 @@ class _MapPageState extends State<MapPage> {
                           backgroundColor: Colors.red,
                           foregroundColor: Colors.white),
                       onPressed: () => Navigator.pop(context, true),
-                      child: const Text('ลบเลย'))
+                      child: const Text('ลบ'))
                 ]));
   }
 
@@ -536,18 +525,12 @@ class _MapPageState extends State<MapPage> {
         foregroundColor: Colors.white,
         actions: [
           IconButton(
-              icon: Icon(_isDarkMode ? Icons.light_mode : Icons.dark_mode,
-                  size: 26),
-              tooltip: 'สลับโหมดแผนที่',
-              onPressed: () {
-                setState(() {
-                  _isDarkMode = !_isDarkMode;
-                });
-              }),
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _fetchShops),
+              icon: const Icon(Icons.refresh),
+              tooltip: 'รีเฟรชข้อมูล',
+              onPressed: _fetchShops),
           IconButton(
               icon: const Icon(Icons.bar_chart, size: 28),
-              tooltip: 'สรุปภาพรวม',
+              tooltip: 'ดูแดชบอร์ด',
               onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -566,7 +549,7 @@ class _MapPageState extends State<MapPage> {
                         children: [
                       Icon(Icons.filter_list, color: Colors.white, size: 40),
                       SizedBox(height: 10),
-                      Text('ตัวกรองพิกัด',
+                      Text('ตัวกรองแผนที่',
                           style: TextStyle(color: Colors.white, fontSize: 20))
                     ]))),
             Expanded(
@@ -586,18 +569,18 @@ class _MapPageState extends State<MapPage> {
             const Divider(),
             Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: Text('กำลังแสดงพิกัด: ${_markers.length} จุด',
+                child: Text('รวม: ${_markers.length} พิกัด',
                     style: const TextStyle(color: Colors.grey)))
           ],
         ),
       ),
       body: GoogleMap(
         initialCameraPosition:
-            const CameraPosition(target: LatLng(13.5475, 100.2744), zoom: 15.0),
+            CameraPosition(target: _currentCenter, zoom: 15.0),
         markers: _markers,
-        style: _isDarkMode ? _darkMapStyle : null,
         onCameraMove: (CameraPosition position) {
           _currentZoom = position.zoom;
+          _currentCenter = position.target;
         },
         onCameraIdle: () {
           if ((_currentZoom - _lastDrawnZoom).abs() > 0.5) {
@@ -615,10 +598,6 @@ class _MapPageState extends State<MapPage> {
     );
   }
 }
-
-// โค้ดโหมดมืด JSON
-const String _darkMapStyle =
-    '''[{"elementType": "geometry","stylers": [{"color": "#212121"}]},{"elementType": "labels.icon","stylers": [{"visibility": "off"}]},{"elementType": "labels.text.fill","stylers": [{"color": "#757575"}]},{"elementType": "labels.text.stroke","stylers": [{"color": "#212121"}]},{"featureType": "administrative","elementType": "geometry","stylers": [{"color": "#757575"}]},{"featureType": "administrative.country","elementType": "labels.text.fill","stylers": [{"color": "#9e9e9e"}]},{"featureType": "administrative.locality","elementType": "labels.text.fill","stylers": [{"color": "#bdbdbd"}]},{"featureType": "poi","elementType": "labels.text.fill","stylers": [{"color": "#757575"}]},{"featureType": "park","elementType": "geometry","stylers": [{"color": "#181818"}]},{"featureType": "park","elementType": "labels.text.fill","stylers": [{"color": "#616161"}]},{"featureType": "park","elementType": "labels.text.stroke","stylers": [{"color": "#1b1b1b"}]},{"featureType": "road","elementType": "geometry.fill","stylers": [{"color": "#2c2c2c"}]},{"featureType": "road","elementType": "labels.text.fill","stylers": [{"color": "#8a8a8a"}]},{"featureType": "road.arterial","elementType": "geometry","stylers": [{"color": "#373737"}]},{"featureType": "road.highway","elementType": "geometry","stylers": [{"color": "#3c3c3c"}]},{"featureType": "road.highway.controlled_access","elementType": "geometry","stylers": [{"color": "#4e4e4e"}]},{"featureType": "road.local","elementType": "labels.text.fill","stylers": [{"color": "#616161"}]},{"featureType": "transit","elementType": "labels.text.fill","stylers": [{"color": "#757575"}]},{"featureType": "water","elementType": "geometry","stylers": [{"color": "#000000"}]},{"featureType": "water","elementType": "labels.text.fill","stylers": [{"color": "#3d3d3d"}]}]''';
 
 // =======================================================
 // 📊 หน้า 2: แดชบอร์ดสรุปข้อมูล
@@ -682,7 +661,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: const Text('📊 สรุปภาพรวมยุทธศาสตร์'),
+          title: const Text('📊 สรุปยุทธศาสตร์ SME'),
           backgroundColor: Colors.blue.shade800,
           foregroundColor: Colors.white),
       backgroundColor: Colors.grey.shade100,
@@ -724,7 +703,7 @@ class _DashboardPageState extends State<DashboardPage> {
             padding: const EdgeInsets.all(16.0),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('ดัชนีชี้วัดหลัก (KPIs)',
+              const Text('ตัวชี้วัดความสำเร็จ (KPIs)',
                   style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -737,17 +716,17 @@ class _DashboardPageState extends State<DashboardPage> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
-                    _buildSummaryCard('ลูกค้ารวมทั้งหมด', '$totalCustomers',
+                    _buildSummaryCard('ลูกค้ารวม (คน)', '$totalCustomers',
                         Icons.groups, Colors.green),
-                    _buildSummaryCard('จำนวนพิกัดที่ปัก', '$totalPins',
+                    _buildSummaryCard('จำนวนพิกัดรวม', '$totalPins',
                         Icons.place, Colors.blue),
-                    _buildSummaryCard('ร้านคู่แข่งรอบๆ', '$countCompetitor',
+                    _buildSummaryCard('ร้านคู่แข่ง', '$countCompetitor',
                         Icons.warning_rounded, Colors.red),
-                    _buildSummaryCard('สาขาหน้าร้านเรา', '$countStore',
+                    _buildSummaryCard('สาขาของเรา', '$countStore',
                         Icons.storefront, Colors.lightBlue)
                   ]),
               const SizedBox(height: 32),
-              const Text('สัดส่วนกลุ่มอายุลูกค้า',
+              const Text('สัดส่วนกลุ่มอายุลูกค้าเป้าหมาย',
                   style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
