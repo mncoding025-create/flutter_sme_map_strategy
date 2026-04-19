@@ -5,17 +5,17 @@
 ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
 
 <div align="center">
-  <img width="300" height="999" alt="image" src="https://github.com/user-attachments/assets/1caa0779-c536-44e7-b547-594d37b49684" />
+  <img width="300" height="855" alt="image" src="https://github.com/user-attachments/assets/de904a96-0a60-4eb2-9439-3f6997d8b6bd" />
+  
+  <img width="300" height="855" alt="image" src="https://github.com/user-attachments/assets/85ec5817-29bd-4e9a-8958-6f864ff8b0fa" />
 
-  <img width="300" height="996" alt="image" src="https://github.com/user-attachments/assets/5d7e7cb4-5722-4bc5-b68e-e3ce9e05196b" />
+  <img width="300" height="857" alt="image" src="https://github.com/user-attachments/assets/85d303d7-7fb8-4f15-b1d4-0432ce88b234" />
 
-  <img width="300" height="998" alt="image" src="https://github.com/user-attachments/assets/b539c2b9-34cf-4d41-9c75-6adf541a9a8a" />
+  <img width="300" height="859" alt="image" src="https://github.com/user-attachments/assets/449f2a34-553f-427f-b90a-d73317131d67" />
 
-  <img width="300" height="1000" alt="image" src="https://github.com/user-attachments/assets/b4cd2c09-3f58-4b79-95f7-00d159523f32" />
+  <img width="300" height="859" alt="image" src="https://github.com/user-attachments/assets/ffccbbd4-4507-46b5-9899-3fe635b09f8a" />
 
-  <img width="300" height="998" alt="image" src="https://github.com/user-attachments/assets/64a78d9d-dd85-47af-87ee-45fc29a353c1" />
-
-  <img width="300" height="1002" alt="image" src="https://github.com/user-attachments/assets/0dd54b2e-b6d2-4d87-b98d-09c9e02e4320" />
+  <img width="300" height="857" alt="image" src="https://github.com/user-attachments/assets/bc4b21ae-3054-484a-89e7-b79b7c1904bf" />
 </div>
 
 <br>
