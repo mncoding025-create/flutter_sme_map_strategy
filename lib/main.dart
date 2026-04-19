@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart'; // ตัวอ่านไฟล์ .env
-import 'views/map_page.dart'; // เช็ค Path ให้ตรงกับโฟลเดอร์ของคุณ
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'theme/app_theme.dart';
+import 'views/main_shell.dart';
+import 'views/login_page.dart';
 
 void main() async {
   // 1. ตรวจสอบการเชื่อมต่อกับ Flutter Engine
@@ -33,76 +36,152 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'SME Strategy Map',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
-      home: const LoginPage(),
+      theme: AppTheme.darkTheme,
+      home: const SplashPage(),
     );
   }
 }
 
-class LoginPage extends StatelessWidget {
-  const LoginPage({super.key});
+// =======================================================
+// Splash / Login Page — Brutalist Dark Style
+// =======================================================
+class SplashPage extends StatelessWidget {
+  const SplashPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.blue[900]!, Colors.blue[600]!],
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.analytics_outlined,
-                size: 100, color: Colors.white),
-            const SizedBox(height: 24),
-            const Text(
-              'SME Strategy Map',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 34,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-              ),
-            ),
-            const Text(
-              'วิเคราะห์พิกัดการตลาดและกลุ่มเป้าหมาย',
-              style: TextStyle(color: Colors.white70, fontSize: 16),
-            ),
-            const SizedBox(height: 60),
+      backgroundColor: AppColors.bgDeep,
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Logo
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: AppColors.neonGreen,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Icon(
+                    Icons.analytics_outlined,
+                    size: 60,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 32),
 
-            // --- ปุ่มเข้าใช้งานแบบ Guest (ทางลัดเข้าหน้าแผนที่) ---
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const MapPage()),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.blue[900],
-                  minimumSize: const Size(double.infinity, 56),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30)),
-                  elevation: 5,
+                // Title
+                Text(
+                  'SME\nSTRATEGY\nMAP',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 42,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.textPrimary,
+                    height: 1.0,
+                    letterSpacing: -1,
+                  ),
                 ),
-                child: const Text(
-                  'เข้าใช้งานแบบ Guest (ทดสอบระบบ)',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                const SizedBox(height: 16),
+                Text(
+                  'วิเคราะห์พิกัดการตลาดและกลุ่มเป้าหมาย',
+                  style: GoogleFonts.inter(
+                    color: AppColors.textMuted,
+                    fontSize: 13,
+                    letterSpacing: 0.5,
+                  ),
                 ),
-              ),
+                const SizedBox(height: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppColors.neonGreen),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  child: Text(
+                    'VERSION 2.0 — BRUTALIST',
+                    style: GoogleFonts.inter(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.neonGreen,
+                      letterSpacing: 2.0,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 60),
+
+                // Guest Mode Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const MainShell()),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.neonGreen,
+                      foregroundColor: Colors.black,
+                      minimumSize: const Size(double.infinity, 56),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(2)),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      'เข้าใช้งานแบบ Guest',
+                      style: GoogleFonts.inter(
+                          fontSize: 16, fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Login Button
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const LoginPage()),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.textPrimary,
+                      minimumSize: const Size(double.infinity, 56),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(2)),
+                      side: const BorderSide(color: AppColors.border),
+                    ),
+                    child: Text(
+                      'เข้าสู่ระบบด้วย Email',
+                      style: GoogleFonts.inter(
+                          fontSize: 14, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 40),
+                Text(
+                  'SYSTEM STATUS: READY',
+                  style: GoogleFonts.inter(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textMuted,
+                    letterSpacing: 2.0,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

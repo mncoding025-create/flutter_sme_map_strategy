@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'map_page.dart'; // ดึงโทนสี AppColors มาใช้
+import 'package:google_fonts/google_fonts.dart';
+import '../theme/app_theme.dart';
 
 class CreditPage extends StatelessWidget {
   const CreditPage({super.key});
@@ -7,82 +8,76 @@ class CreditPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bgGrey,
+      backgroundColor: AppColors.bgDeep,
       appBar: AppBar(
-        title: const Text('เกี่ยวกับระบบ',
-            style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: AppColors.navyDeep,
-        foregroundColor: Colors.white,
+        title: Text('ABOUT',
+            style: GoogleFonts.inter(
+                fontWeight: FontWeight.w800, letterSpacing: 2.0)),
+        backgroundColor: AppColors.bgDeep,
+        foregroundColor: AppColors.textPrimary,
         elevation: 0,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const SizedBox(height: 20),
             // โลโก้แอป
             Container(
-              padding: const EdgeInsets.all(25),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.grey.withOpacity(0.15),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10))
-                  ]),
-              child: const Icon(Icons.business_center_rounded,
-                  size: 70, color: AppColors.navyDeep),
+                color: AppColors.neonGreen,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Icon(Icons.analytics_rounded,
+                  size: 50, color: Colors.black),
             ),
-            const SizedBox(height: 25),
-            const Text('SME Strategy Map',
-                style: TextStyle(
-                    fontSize: 24,
+            const SizedBox(height: 20),
+            Text('SME STRATEGY MAP',
+                style: GoogleFonts.inter(
+                    fontSize: 22,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.navyDeep)),
+                    color: AppColors.textPrimary,
+                    letterSpacing: 1.0)),
             const SizedBox(height: 8),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                  color: AppColors.azureLight,
-                  borderRadius: BorderRadius.circular(20)),
-              child: const Text('Version 2.0.1 (Beta)',
-                  style: TextStyle(
-                      color: AppColors.accentBlue,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12)),
+                border: Border.all(color: AppColors.neonGreen),
+                borderRadius: BorderRadius.circular(2),
+              ),
+              child: Text('Version 2.0.1 (Beta)',
+                  style: GoogleFonts.inter(
+                      color: AppColors.neonGreen,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 10,
+                      letterSpacing: 1.5)),
             ),
             const SizedBox(height: 40),
 
             // Credit area
             Container(
-              padding: const EdgeInsets.all(25),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(25),
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.grey.withOpacity(0.08),
-                        blurRadius: 15,
-                        offset: const Offset(0, 5))
-                  ]),
+                color: AppColors.bgSurface,
+                border: Border.all(color: AppColors.border),
+                borderRadius: BorderRadius.circular(2),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildInfoRow(Icons.developer_board_rounded,
                       'ออกแบบและพัฒนาโดย', 'Chakrit'),
-                  const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 15),
-                      child: Divider()),
+                  Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      child: Divider(color: AppColors.border)),
                   _buildInfoRow(Icons.business_rounded, 'มหาวิทยาลัย',
-                      'มหาวิทยาลัยเอเชียอาคเนย์ Southeast Asia University (SAU)'),
-                  const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 15),
-                      child: Divider()),
-
-                  // 🌟 เพิ่มช่องทางติดต่อผ่าน Email ตรงนี้ครับ
+                      'มหาวิทยาลัยเอเชียอาคเนย์ (SAU)'),
+                  Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      child: Divider(color: AppColors.border)),
                   _buildInfoRow(Icons.email_rounded, 'ช่องทางการติดต่อ',
                       's6752410026@sau.ac.th'),
                 ],
@@ -91,26 +86,25 @@ class CreditPage extends StatelessWidget {
             const SizedBox(height: 40),
 
             // Footer
-            const Text('© 2026 SAU.\nAll rights reserved.',
+            Text('© 2026 SAU.\nAll rights reserved.',
                 textAlign: TextAlign.center,
-                style:
-                    TextStyle(color: Colors.grey, fontSize: 12, height: 1.5)),
+                style: GoogleFonts.inter(
+                    color: AppColors.textMuted, fontSize: 11, height: 1.5)),
           ],
         ),
       ),
     );
   }
 
-  // Widget สำหรับสร้างแถวข้อมูลให้ดูสะอาดตา
   Widget _buildInfoRow(IconData icon, String title, String detail) {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-              color: AppColors.azureLight.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(15)),
-          child: Icon(icon, color: AppColors.accentBlue, size: 24),
+              color: AppColors.neonGreen.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(2)),
+          child: Icon(icon, color: AppColors.neonGreen, size: 22),
         ),
         const SizedBox(width: 15),
         Expanded(
@@ -118,17 +112,17 @@ class CreditPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(title,
-                  style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500)),
+                  style: GoogleFonts.inter(
+                      color: AppColors.textMuted,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.0)),
               const SizedBox(height: 4),
-              // ปรับขนาด font ลงนิดนึงเผื่อชื่อมหาลัยหรืออีเมลยาวเกินไป
               Text(detail,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                      color: AppColors.navyDeep)),
+                  style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: AppColors.textPrimary)),
             ],
           ),
         ),

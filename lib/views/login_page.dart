@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'map_page.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../theme/app_theme.dart';
+import 'main_shell.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -24,7 +26,7 @@ class _LoginPageState extends State<LoginPage> {
       final AuthChangeEvent event = data.event;
       if (event == AuthChangeEvent.signedIn) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const MapPage()),
+          MaterialPageRoute(builder: (context) => const MainShell()),
         );
       }
     });
@@ -35,7 +37,11 @@ class _LoginPageState extends State<LoginPage> {
 
     if (email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('กรุณากรอกอีเมลก่อนครับ')),
+        SnackBar(
+          content: Text('กรุณากรอกอีเมลก่อนครับ',
+              style: GoogleFonts.inter()),
+          backgroundColor: AppColors.danger,
+        ),
       );
       return;
     }
@@ -48,10 +54,11 @@ class _LoginPageState extends State<LoginPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
-                'ส่ง Magic Link เรียบร้อย! เช็คอีเมลของคุณเพื่อเข้าสู่ระบบนะ'),
-            backgroundColor: Colors.green,
+                'ส่ง Magic Link เรียบร้อย! เช็คอีเมลของคุณเพื่อเข้าสู่ระบบนะ',
+                style: GoogleFonts.inter()),
+            backgroundColor: AppColors.customerGreen,
           ),
         );
       }
@@ -59,8 +66,9 @@ class _LoginPageState extends State<LoginPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('เกิดข้อผิดพลาด: $e'),
-            backgroundColor: Colors.red,
+            content: Text('เกิดข้อผิดพลาด: $e',
+                style: GoogleFonts.inter()),
+            backgroundColor: AppColors.danger,
           ),
         );
       }
@@ -79,9 +87,15 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.bgDeep,
       appBar: AppBar(
-        title: const Text('SME Map Strategy'),
+        backgroundColor: AppColors.bgDeep,
+        foregroundColor: AppColors.textPrimary,
+        title: Text('LOGIN',
+            style: GoogleFonts.inter(
+                fontWeight: FontWeight.w800, letterSpacing: 2.0)),
         centerTitle: true,
+        elevation: 0,
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -91,26 +105,55 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.map_rounded, size: 100, color: Colors.blue),
-                const SizedBox(height: 24),
-                const Text(
-                  'ยินดีต้อนรับ',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.neonGreen,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  child: const Icon(Icons.lock_outline,
+                      size: 40, color: Colors.black),
                 ),
-                const Text(
+                const SizedBox(height: 24),
+                Text(
+                  'SIGN IN',
+                  style: GoogleFonts.inter(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                Text(
                   'เข้าสู่ระบบเพื่อวางแผนกลยุทธ์ SME',
-                  style: TextStyle(color: Colors.grey),
+                  style: GoogleFonts.inter(
+                      color: AppColors.textMuted, fontSize: 13),
                 ),
                 const SizedBox(height: 32),
 
                 // ช่องกรอกอีเมล
                 TextField(
                   controller: _emailController,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
+                  style: GoogleFonts.inter(color: AppColors.textPrimary),
+                  decoration: InputDecoration(
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(2),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(2),
+                      borderSide:
+                          const BorderSide(color: AppColors.neonGreen),
+                    ),
                     labelText: 'Email Address',
+                    labelStyle:
+                        GoogleFonts.inter(color: AppColors.textMuted),
                     hintText: 'example@email.com',
-                    prefixIcon: Icon(Icons.email_outlined),
+                    hintStyle:
+                        GoogleFonts.inter(color: AppColors.textMuted),
+                    prefixIcon: const Icon(Icons.email_outlined,
+                        color: AppColors.textMuted),
+                    filled: true,
+                    fillColor: AppColors.bgSurface,
                   ),
                   keyboardType: TextInputType.emailAddress,
                 ),
@@ -123,10 +166,10 @@ class _LoginPageState extends State<LoginPage> {
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _signIn,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
+                      backgroundColor: AppColors.neonGreen,
+                      foregroundColor: Colors.black,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
                     child: _isLoading
@@ -134,38 +177,19 @@ class _LoginPageState extends State<LoginPage> {
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
-                                color: Colors.white, strokeWidth: 2))
-                        : const Text('ส่ง Magic Link',
-                            style: TextStyle(fontSize: 16)),
+                                color: Colors.black, strokeWidth: 2))
+                        : Text('ส่ง Magic Link',
+                            style: GoogleFonts.inter(
+                                fontSize: 16, fontWeight: FontWeight.w800)),
                   ),
                 ),
 
                 const SizedBox(height: 16),
-
-                // Guest Mode (Bypass)
-                OutlinedButton.icon(
-                  onPressed: () {
-                    // วาร์ปไปหน้า MapPage ทันทีโดยไม่สนระบบ Login
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (context) => const MapPage()),
-                    );
-                  },
-                  icon: const Icon(Icons.person_outline),
-                  label: const Text('เข้าใช้งานแบบ Guest (ทดลองใช้)'),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 55),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                const Text(
+                Text(
                   'เราจะส่งลิงก์สำหรับเข้าสู่ระบบไปที่อีเมลของคุณ\nโดยไม่ต้องใช้รหัสผ่าน',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                  style: GoogleFonts.inter(
+                      fontSize: 11, color: AppColors.textMuted),
                 ),
               ],
             ),
