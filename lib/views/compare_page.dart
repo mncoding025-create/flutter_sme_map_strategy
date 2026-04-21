@@ -25,8 +25,9 @@ class _ComparePageState extends State<ComparePage> {
 
     // --- Group shops by "หน้าร้านเรา" (Our Stores) ---
     List<Map<String, dynamic>> storeList = [];
-    List<dynamic> stores =
-        shops.where((s) => (s['type']?.toString() ?? '').contains('หน้าร้านเรา')).toList();
+    List<dynamic> stores = shops
+        .where((s) => (s['type']?.toString() ?? '').contains('หน้าร้านเรา'))
+        .toList();
 
     if (stores.isEmpty) {
       // ถ้ายังไม่มีสาขา → สร้าง default location
@@ -82,7 +83,8 @@ class _ComparePageState extends State<ComparePage> {
           ? 30
           : ((1 - nearbyCompetitors / (nearbyCompetitors + 1)) * 30);
       double supScore = nearbySuppliers > 0 ? 15 : 0;
-      int finalScore = (cScore + compScore + supScore + 15).round().clamp(0, 100);
+      int finalScore =
+          (cScore + compScore + supScore + 15).round().clamp(0, 100);
 
       // Traffic estimation
       String trafficLevel = 'Low';
@@ -216,8 +218,7 @@ class _ComparePageState extends State<ComparePage> {
                       decoration: BoxDecoration(
                         color: AppColors.bgSurface,
                         border: Border.all(
-                            color: AppColors.border,
-                            style: BorderStyle.solid),
+                            color: AppColors.border, style: BorderStyle.solid),
                         borderRadius: BorderRadius.circular(2),
                       ),
                       child: Row(
@@ -270,10 +271,9 @@ class _ComparePageState extends State<ComparePage> {
                             'Customer Base', '40%', 'จำนวนลูกค้าในรัศมี 2 km'),
                         _buildLegendRow('Competition Index', '30%',
                             'ยิ่งมีคู่แข่งน้อย = Score สูง'),
-                        _buildLegendRow('Supply Chain', '15%',
-                            'มีซัพพลายเออร์ใกล้ = ดี'),
                         _buildLegendRow(
-                            'Base Score', '15%', 'คะแนนพื้นฐาน'),
+                            'Supply Chain', '15%', 'มีซัพพลายเออร์ใกล้ = ดี'),
+                        _buildLegendRow('Base Score', '15%', 'คะแนนพื้นฐาน'),
                       ],
                     ),
                   ),
@@ -298,7 +298,7 @@ class _ComparePageState extends State<ComparePage> {
             padding: const EdgeInsets.symmetric(vertical: 2),
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: AppColors.neonGreen.withOpacity(0.15),
+              color: AppColors.neonGreen.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(2),
             ),
             child: Text(weight,
@@ -371,8 +371,8 @@ class _ComparePageState extends State<ComparePage> {
               const SizedBox(height: 8),
               Text(
                 'ระบบจะคำนวณ Score จากข้อมูลลูกค้าและคู่แข่งในรัศมี 2 km',
-                style: GoogleFonts.inter(
-                    fontSize: 11, color: AppColors.textMuted),
+                style:
+                    GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted),
               ),
             ],
           ),
@@ -380,8 +380,8 @@ class _ComparePageState extends State<ComparePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child:
-                Text('ยกเลิก', style: GoogleFonts.inter(color: AppColors.textMuted)),
+            child: Text('ยกเลิก',
+                style: GoogleFonts.inter(color: AppColors.textMuted)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -529,7 +529,7 @@ class _CompareCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: AppColors.neonGreen.withOpacity(0.15),
+                            color: AppColors.neonGreen.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(2),
                           ),
                           child: Text(
@@ -555,8 +555,8 @@ class _CompareCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: Row(
               children: [
-                _buildStatChip('CUSTOMERS', '$customerCount',
-                    AppColors.customerGreen),
+                _buildStatChip(
+                    'CUSTOMERS', '$customerCount', AppColors.customerGreen),
                 const SizedBox(width: 8),
                 _buildStatChip(
                     'COMPETITORS', '$competitorCount', AppColors.danger),

@@ -42,8 +42,7 @@ class CreditPage extends StatelessWidget {
                     letterSpacing: 1.0)),
             const SizedBox(height: 8),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 border: Border.all(color: AppColors.neonGreen),
                 borderRadius: BorderRadius.circular(2),
@@ -102,7 +101,7 @@ class CreditPage extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-              color: AppColors.neonGreen.withOpacity(0.1),
+              color: AppColors.neonGreen.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(2)),
           child: Icon(icon, color: AppColors.neonGreen, size: 22),
         ),

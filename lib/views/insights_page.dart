@@ -58,9 +58,8 @@ class _InsightsPageState extends State<InsightsPage> {
 
     // กลุ่มอายุหลัก (26-40 = target segment)
     int targetAgeCount = ageData['26-40 ปี'] ?? 0;
-    double ageScore = totalCustomers > 0
-        ? (targetAgeCount / totalCustomers) * 30
-        : 0;
+    double ageScore =
+        totalCustomers > 0 ? (targetAgeCount / totalCustomers) * 30 : 0;
 
     // สัดส่วนคู่แข่งต่อร้านเรา (ยิ่งน้อยยิ่งดี)
     double competitorRatio = countStore > 0
@@ -83,9 +82,8 @@ class _InsightsPageState extends State<InsightsPage> {
     // Demographics percentages
     Map<String, double> agePercentages = {};
     for (var entry in ageData.entries) {
-      agePercentages[entry.key] = totalCustomers > 0
-          ? (entry.value / totalCustomers * 100)
-          : 0;
+      agePercentages[entry.key] =
+          totalCustomers > 0 ? (entry.value / totalCustomers * 100) : 0;
     }
 
     return {
@@ -183,8 +181,8 @@ class _InsightsPageState extends State<InsightsPage> {
                       _buildMiniStat('COMPETITORS',
                           '${data['countCompetitor']}', AppColors.danger),
                       const SizedBox(width: 12),
-                      _buildMiniStat(
-                          'STORES', '${data['countStore']}', AppColors.storeBlue),
+                      _buildMiniStat('STORES', '${data['countStore']}',
+                          AppColors.storeBlue),
                     ],
                   ),
                 ),
@@ -215,7 +213,8 @@ class _InsightsPageState extends State<InsightsPage> {
                         ),
                         const SizedBox(height: 20),
                         _buildDemographicRow(
-                            'GEN Z (15-25)', agePercentages['15-25 ปี'] ?? 0,
+                            'GEN Z (15-25)',
+                            agePercentages['15-25 ปี'] ?? 0,
                             'กลุ่มนักศึกษาและวัยเริ่มทำงาน'),
                         _buildDemographicRow(
                             'MILLENNIALS (26-40)',
@@ -226,11 +225,11 @@ class _InsightsPageState extends State<InsightsPage> {
                             agePercentages['41-60 ปี'] ?? 0,
                             'กลุ่มผู้บริหารและเจ้าของกิจการ'),
                         _buildDemographicRow(
-                            'SENIOR (60+)', agePercentages['60 ปีขึ้นไป'] ?? 0,
+                            'SENIOR (60+)',
+                            agePercentages['60 ปีขึ้นไป'] ?? 0,
                             'กลุ่มผู้สูงอายุ'),
-                        _buildDemographicRow(
-                            'UNKNOWN', agePercentages['ไม่ระบุ'] ?? 0,
-                            'ไม่ระบุกลุ่มอายุ'),
+                        _buildDemographicRow('UNKNOWN',
+                            agePercentages['ไม่ระบุ'] ?? 0, 'ไม่ระบุกลุ่มอายุ'),
                       ],
                     ),
                   ),
@@ -256,7 +255,7 @@ class _InsightsPageState extends State<InsightsPage> {
                           style: GoogleFonts.inter(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: Colors.black.withOpacity(0.5),
+                            color: Colors.black.withValues(alpha: 0.5),
                             letterSpacing: 3.0,
                           ),
                         ),
@@ -275,7 +274,7 @@ class _InsightsPageState extends State<InsightsPage> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 6),
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.15),
+                            color: Colors.black.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(2),
                           ),
                           child: Column(
@@ -285,7 +284,7 @@ class _InsightsPageState extends State<InsightsPage> {
                                 style: GoogleFonts.inter(
                                   fontSize: 9,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.black.withOpacity(0.5),
+                                  color: Colors.black.withValues(alpha: 0.5),
                                   letterSpacing: 2.0,
                                 ),
                               ),
@@ -331,8 +330,11 @@ class _InsightsPageState extends State<InsightsPage> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        _buildScoreRow('Customer Base (40%)',
-                            '${((data['totalCustomers'] as int) / 100.0).clamp(0, 1).toStringAsFixed(0)}'),
+                        _buildScoreRow(
+                            'Customer Base (40%)',
+                            ((data['totalCustomers'] as int) / 100.0)
+                                .clamp(0, 1)
+                                .toStringAsFixed(0)),
                         _buildScoreRow('Target Age Match (30%)',
                             '${data['totalCustomers'] > 0 ? ((data['ageData']['26-40 ปี'] ?? 0) / data['totalCustomers'] * 100).toStringAsFixed(0) : 0}%'),
                         _buildScoreRow('Competition Index (30%)',

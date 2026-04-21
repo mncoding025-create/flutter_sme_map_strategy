@@ -23,6 +23,7 @@ class _MapPageState extends State<MapPage> {
 
   final Set<Marker> _markers = {};
   List<dynamic> _allShops = [];
+  final Map<String, BitmapDescriptor> _iconCache = {};
 
   double _currentZoom = 15.0;
   double _lastDrawnZoom = 15.0;
@@ -65,7 +66,7 @@ class _MapPageState extends State<MapPage> {
     final double size = iconPainter.width + (padding * 2);
     final Paint paint = Paint()..color = bgColor;
     final Paint borderPaint = Paint()
-      ..color = AppColors.neonGreen.withOpacity(0.6)
+      ..color = AppColors.neonGreen.withValues(alpha: 0.6)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.5 * scale;
 
@@ -77,7 +78,7 @@ class _MapPageState extends State<MapPage> {
         .endRecording()
         .toImage(size.toInt(), size.toInt());
     final ByteData? data = await img.toByteData(format: ui.ImageByteFormat.png);
-    return BitmapDescriptor.fromBytes(data!.buffer.asUint8List());
+    return BitmapDescriptor.bytes(data!.buffer.asUint8List());
   }
 
   // --- ดึงข้อมูลจาก Supabase ---
@@ -119,8 +120,11 @@ class _MapPageState extends State<MapPage> {
           mColor = AppColors.supplierOrange;
         }
 
-        BitmapDescriptor markerIcon =
+        final double zoomBucket = (_currentZoom / 1.5).roundToDouble() * 1.5;
+        final String cacheKey = '$type:$zoomBucket';
+        final BitmapDescriptor markerIcon = _iconCache[cacheKey] ??
             await _createScaledIconMarker(mIcon, mColor, _currentZoom);
+        _iconCache[cacheKey] = markerIcon;
 
         newMarkers.add(Marker(
           markerId: MarkerId('${shopId}_z_${_currentZoom.toStringAsFixed(1)}'),
@@ -144,8 +148,9 @@ class _MapPageState extends State<MapPage> {
   Future<void> _launchGoogleMaps(double lat, double lng) async {
     final Uri url = Uri.parse(
         'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng');
-    if (await canLaunchUrl(url))
+    if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
+    }
   }
 
   // --- เพิ่มข้อมูล ---
@@ -194,8 +199,7 @@ class _MapPageState extends State<MapPage> {
                       'กลุ่มอายุหลัก',
                       localSelectedAge,
                       ageRangeOptions,
-                      (val) =>
-                          setDialogState(() => localSelectedAge = val!)),
+                      (val) => setDialogState(() => localSelectedAge = val!)),
                   const SizedBox(height: 16),
                   _buildQuantityControl(qtyController),
                   const SizedBox(height: 16),
@@ -258,8 +262,8 @@ class _MapPageState extends State<MapPage> {
                       fontWeight: FontWeight.w800,
                       color: AppColors.textPrimary)),
               IconButton(
-                  icon: const Icon(Icons.delete_outline,
-                      color: AppColors.danger),
+                  icon:
+                      const Icon(Icons.delete_outline, color: AppColors.danger),
                   onPressed: () async {
                     bool? c = await _showConfirmDeleteDialog();
                     if (c == true) {
@@ -281,8 +285,7 @@ class _MapPageState extends State<MapPage> {
                       'กลุ่มอายุหลัก',
                       localSelectedAge,
                       ageRangeOptions,
-                      (val) =>
-                          setDialogState(() => localSelectedAge = val!)),
+                      (val) => setDialogState(() => localSelectedAge = val!)),
                   const SizedBox(height: 16),
                   _buildQuantityControl(qtyController),
                   const SizedBox(height: 16),
@@ -307,8 +310,9 @@ class _MapPageState extends State<MapPage> {
                           double.tryParse(shop['latitude'].toString());
                       double? lng =
                           double.tryParse(shop['longitude'].toString());
-                      if (lat != null && lng != null)
+                      if (lat != null && lng != null) {
                         _launchGoogleMaps(lat, lng);
+                      }
                     },
                   ),
                 ),
@@ -343,7 +347,7 @@ class _MapPageState extends State<MapPage> {
   Widget _buildDropdown(String label, String value, List<String> items,
       ValueChanged<String?> onChanged) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       dropdownColor: AppColors.bgSurfaceHigh,
       style: GoogleFonts.inter(color: AppColors.textPrimary, fontSize: 14),
       decoration: InputDecoration(
@@ -358,9 +362,8 @@ class _MapPageState extends State<MapPage> {
           borderSide: const BorderSide(color: AppColors.neonGreen),
         ),
       ),
-      items: items
-          .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-          .toList(),
+      items:
+          items.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
       onChanged: onChanged,
     );
   }
@@ -472,6 +475,14 @@ class _MapPageState extends State<MapPage> {
                 ]));
   }
 
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message, style: GoogleFonts.inter()),
+      backgroundColor: AppColors.danger,
+    ));
+  }
+
   Future<void> _saveData(
       LatLng pos, String desc, String type, String age, String qty) async {
     try {
@@ -479,13 +490,14 @@ class _MapPageState extends State<MapPage> {
         'description': desc,
         'type': type,
         'age_range': type == 'ลูกค้า' ? age : null,
-        'quantity': qty,
+        'quantity': int.tryParse(qty) ?? 0,
         'latitude': pos.latitude,
         'longitude': pos.longitude
       });
       _fetchShops();
     } catch (e) {
       debugPrint('Save Error: $e');
+      _showErrorSnackBar('บันทึกข้อมูลไม่สำเร็จ');
     }
   }
 
@@ -496,11 +508,12 @@ class _MapPageState extends State<MapPage> {
         'description': desc,
         'type': type,
         'age_range': type == 'ลูกค้า' ? age : null,
-        'quantity': qty
+        'quantity': int.tryParse(qty) ?? 0,
       }).eq('id', id);
       _fetchShops();
     } catch (e) {
       debugPrint('Update Error: $e');
+      _showErrorSnackBar('แก้ไขข้อมูลไม่สำเร็จ');
     }
   }
 
@@ -510,6 +523,7 @@ class _MapPageState extends State<MapPage> {
       _fetchShops();
     } catch (e) {
       debugPrint('Delete Error: $e');
+      _showErrorSnackBar('ลบข้อมูลไม่สำเร็จ');
     }
   }
 
@@ -600,7 +614,7 @@ class _MapPageState extends State<MapPage> {
                 width: 200,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.bgSurface.withOpacity(0.95),
+                  color: AppColors.bgSurface.withValues(alpha: 0.95),
                   border: Border.all(color: AppColors.border),
                   borderRadius: BorderRadius.circular(2),
                 ),
@@ -634,7 +648,7 @@ class _MapPageState extends State<MapPage> {
                 end: Alignment.bottomCenter,
                 colors: [
                   Colors.transparent,
-                  AppColors.bgDeep.withOpacity(0.8),
+                  AppColors.bgDeep.withValues(alpha: 0.8),
                   AppColors.bgDeep,
                 ],
               ),
@@ -718,7 +732,7 @@ class _MapPageState extends State<MapPage> {
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: AppColors.bgSurface.withOpacity(0.9),
+          color: AppColors.bgSurface.withValues(alpha: 0.9),
           border: Border.all(color: AppColors.border),
           borderRadius: BorderRadius.circular(2),
         ),
@@ -743,7 +757,8 @@ class _MapPageState extends State<MapPage> {
               width: 16,
               height: 16,
               decoration: BoxDecoration(
-                color: _filters[key]! ? AppColors.neonGreen : Colors.transparent,
+                color:
+                    _filters[key]! ? AppColors.neonGreen : Colors.transparent,
                 border: Border.all(
                     color: _filters[key]!
                         ? AppColors.neonGreen

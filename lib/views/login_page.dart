@@ -24,7 +24,7 @@ class _LoginPageState extends State<LoginPage> {
     _authStateSubscription =
         Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       final AuthChangeEvent event = data.event;
-      if (event == AuthChangeEvent.signedIn) {
+      if (event == AuthChangeEvent.signedIn && mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const MainShell()),
         );
@@ -38,8 +38,7 @@ class _LoginPageState extends State<LoginPage> {
     if (email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('กรุณากรอกอีเมลก่อนครับ',
-              style: GoogleFonts.inter()),
+          content: Text('กรุณากรอกอีเมลก่อนครับ', style: GoogleFonts.inter()),
           backgroundColor: AppColors.danger,
         ),
       );
@@ -66,8 +65,7 @@ class _LoginPageState extends State<LoginPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('เกิดข้อผิดพลาด: $e',
-                style: GoogleFonts.inter()),
+            content: Text('เกิดข้อผิดพลาด: $e', style: GoogleFonts.inter()),
             backgroundColor: AppColors.danger,
           ),
         );
@@ -141,15 +139,12 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(2),
-                      borderSide:
-                          const BorderSide(color: AppColors.neonGreen),
+                      borderSide: const BorderSide(color: AppColors.neonGreen),
                     ),
                     labelText: 'Email Address',
-                    labelStyle:
-                        GoogleFonts.inter(color: AppColors.textMuted),
+                    labelStyle: GoogleFonts.inter(color: AppColors.textMuted),
                     hintText: 'example@email.com',
-                    hintStyle:
-                        GoogleFonts.inter(color: AppColors.textMuted),
+                    hintStyle: GoogleFonts.inter(color: AppColors.textMuted),
                     prefixIcon: const Icon(Icons.email_outlined,
                         color: AppColors.textMuted),
                     filled: true,

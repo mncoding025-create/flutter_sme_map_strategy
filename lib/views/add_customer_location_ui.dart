@@ -91,13 +91,13 @@ class _AddCustomerLocationUiState extends State<AddCustomerLocationUi> {
                 style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blueAccent),
                 onPressed: () async {
-                  // สร้าง Object ข้อมูล
+                  final messenger = ScaffoldMessenger.of(context);
+                  final nav = Navigator.of(context);
                   final newLoc = CustomerLocation(
                     province: _selectedProvince,
                     district: _selectedDistrict,
                     frequency: _selectedFrequency,
                     lastVisit: DateTime.now().toIso8601String(),
-                    // ใส่พิกัดกลางสมุทรสาครไว้ก่อนชั่วคราวค่ะ
                     lat: 13.5475,
                     lng: 100.2744,
                   );
@@ -105,10 +105,10 @@ class _AddCustomerLocationUiState extends State<AddCustomerLocationUi> {
                   await _supabaseService.insertCustomerLocation(newLoc);
 
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger.showSnackBar(
                       const SnackBar(content: Text('บันทึกพิกัดสำเร็จ!')),
                     );
-                    Navigator.pop(context);
+                    nav.pop();
                   }
                 },
                 child: const Text('บันทึกเข้าแผนที่กลยุทธ์',

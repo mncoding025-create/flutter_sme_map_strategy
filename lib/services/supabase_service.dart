@@ -1,6 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/customer_location.dart'; // อย่าลืมสร้างไฟล์ Model ก่อนนะค
-import 'dart:math' as Math;
+import '../models/customer_location.dart';
+import 'dart:math' as math;
 
 class SupabaseService {
   final supabase = Supabase.instance.client;
@@ -19,7 +20,7 @@ class SupabaseService {
 
       return data.map((item) => CustomerLocation.fromJson(item)).toList();
     } catch (e) {
-      print('Error fetching locations: $e');
+      debugPrint('Error fetching locations: $e');
       return [];
     }
   }
@@ -29,7 +30,7 @@ class SupabaseService {
     try {
       await supabase.from('customer_locations').insert(customer.toJson());
     } catch (e) {
-      print('เกิดข้อผิดพลาดในการบันทึกพิกัด: $e');
+      debugPrint('เกิดข้อผิดพลาดในการบันทึกพิกัด: $e');
       rethrow;
     }
   }
@@ -58,12 +59,12 @@ class SupabaseService {
       double lat1, double lon1, double lat2, double lon2) {
     var p = 0.017453292519943295;
     var a = 0.5 -
-        Math.cos((lat2 - lat1) * p) / 2 +
-        Math.cos(lat1 * p) *
-            Math.cos(lat2 * p) *
-            (1 - Math.cos((lon2 - lon1) * p)) /
+        math.cos((lat2 - lat1) * p) / 2 +
+        math.cos(lat1 * p) *
+            math.cos(lat2 * p) *
+            (1 - math.cos((lon2 - lon1) * p)) /
             2;
-    return 12742 * Math.asin(Math.sqrt(a));
+    return 12742 * math.asin(math.sqrt(a));
   }
 
   // ==========================================
@@ -73,8 +74,13 @@ class SupabaseService {
   // (ตรงนี้ใส่โค้ดจัดการ Task เดิมที่คุณชาคริตมีอยู่ได้เลยค่ะ
   // เช่น getTasks, insertTask, updateTask)
 
-  Future<List<dynamic>> getTasks() async {
-    final data = await supabase.from('tasks').select('*').order('created_at');
-    return data;
+  Future<List<Map<String, dynamic>>> getTasks() async {
+    try {
+      final data = await supabase.from('tasks').select('*').order('created_at');
+      return List<Map<String, dynamic>>.from(data);
+    } catch (e) {
+      debugPrint('Error fetching tasks: $e');
+      return [];
+    }
   }
 }
